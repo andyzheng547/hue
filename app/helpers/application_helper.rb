@@ -45,6 +45,88 @@ module ApplicationHelper
         "message":  "There is no Philips Hue connected to your internet.Please make sure your Philips Hue bridge and lightbulbs are set up properly."
       }
     end
+  end
+
+  def whitelist_hue_app
+    if cookies[:hue_username]
+      true
+    else
+      resp = get_hue_authorization
+      cookies[:hue_username] = resp[:username]
+    end
+  end
+
+  def hue_username
+    cookies[:hue_username]
+  end
+
+  def bright_red_settings
+    {:hue => 65535, :sat => 254, :bri => 254}
+  end
+
+  def dim_red_settings
+    {:hue => 65535, :sat => 254, :bri => 100}
+  end
+
+  def bright_green_settings
+    {:hue => 25500, :sat => 254, :bri => 254}
+  end
+
+  def dim_green_settings
+    {:hue => 25500, :sat => 254, :bri => 100}
+  end
+
+  def bright_blue_settings
+    {:hue => 46920, :sat => 254, :bri => 254}
+  end
+
+  def dim_blue_settings
+    {:hue => 46920, :sat => 254, :bri => 100}
+  end
+
+  def color_select_options
+    {
+      "red bright": 1,
+      "red dimmed": 2,
+      "green bright": 3,
+      "green dimmed": 4,
+      "blue bright": 5,
+      "blue dimmed": 6
+    }
+  end
+
+  def color_settings_from_id(id)
+    color_settings = {
+      1 => bright_red_settings,
+      2 => dim_red_settings,
+      3 => bright_green_settings,
+      4 => dim_green_settings,
+      5 => bright_blue_settings,
+      6 => dim_blue_settings
+    }
+
+    return color_settings[id]
+  end
+
+  def to_bool(string)
+    string.downcase == 'true'
+  end
+
+  def update_light(params)
+    url = hue_api_url + "/" + hue_username + "/lights/" + params[:id] + "/state"
+    color_settings = color_settings_from_id(params[:color].to_i)
+
+    data = {
+      on: to_bool(params[:on]),
+      hue: color_settings[:hue],
+      bri: color_settings[:bri],
+      sat: color_settings[:sat]
+    }
+
+    resp = Faraday.put(url) do |request|
+      request.body = data.to_json
+      request.headers['Accept'] = "application/json"
+    end
 
   end
 end
